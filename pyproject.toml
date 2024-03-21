@@ -21,6 +21,15 @@ coverage = "^7.4.4"
 requires = ["poetry-core>=1.2"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.coverage.run]
+source = ["api"]
+branch = true
+omit = [
+    "manage.py",
+    "democrance/*",
+    "api/migrations/*"
+]
+
 [tool.coverage.report]
 fail_under = 90
 show_missing = true
