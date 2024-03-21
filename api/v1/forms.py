@@ -19,7 +19,7 @@ class CustomerCreationForm(forms.ModelForm):
         # Do not include date_of_birth because the request will contain the field 'dob' instead
         fields = ("first_name", "last_name")
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> Customer:
         self.instance = super().save(commit=False)
         self.instance.date_of_birth = self.cleaned_data["dob"]
         self.instance.save()

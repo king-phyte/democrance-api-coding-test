@@ -25,7 +25,7 @@ class Customer(models.Model):
         return f"{self.first_name} {self.last_name}"
 
     def serialize(self):
-        """Serializes the customer instance to JSON
+        """Serializes the customer instance to dict
 
         This must be called after the instance has been saved, otherwise the
         fields may be None
