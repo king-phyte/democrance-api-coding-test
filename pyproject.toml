@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "democrance"
+version = "0.1.0"
+description = ""
+authors = ["Foster Opoku Asante <kofiasante1400@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+django = "^5.0.3"
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.3.0"
+pre-commit = "^3.6.2"
+coverage = "^7.4.4"
+
+[build-system]
+requires = ["poetry-core>=1.2"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+skip_empty = true
+
+
+[tool.autoflake]
+recursive = true
+in_place = true
+remove_all_unused-imports = true
+remove_unused_variables = true
+expand_star_imports = true
+exclude = ["__init__.py"]
+
+[tool.isort]
+profile = "black"
+py_version = 312
