@@ -90,6 +90,57 @@ class QuoteTestCase(TestCase):
         self.assertEqual(response.json()["cover"], 20000 * 1.1)
         self.assertEqual(response.json()["premium"], 200 * 1.5)
 
+        customer_under_25 = Customer.objects.create(
+            first_name="John",
+            last_name="Doe",
+            date_of_birth=datetime.date(year=2000, month=1, day=1),
+        )
+
+        response = self.client.post(
+            "/api/v1/quotes/",
+            {
+                "customer_id": customer_under_25.id,
+                "type": "auto",
+            },
+            content_type="application/json",
+        )
+
+        # People below age 25 get their cover multiplied by 1.2 and premium by 2
+        self.assertEqual(response.json()["cover"], 30000 * 1.2)
+        self.assertEqual(response.json()["premium"], 300 * 2)
+
+        customer_over_50 = Customer.objects.create(
+            first_name="John",
+            last_name="Doe",
+            date_of_birth=datetime.date(year=1920, month=12, day=12),
+        )
+
+        response = self.client.post(
+            "/api/v1/quotes/",
+            {
+                "customer_id": customer_over_50.id,
+                "type": "homeowner-insurance",
+            },
+            content_type="application/json",
+        )
+
+        # People above age 50 get their cover multiplied by 0.7 and premium does not change
+        self.assertEqual(response.json()["cover"], 40000 * 0.7)
+        self.assertEqual(response.json()["premium"], 400)
+
+    def test_create_quote_with_invalid_type(self):
+        response = self.client.post(
+            "/api/v1/quotes/",
+            {
+                "customer_id": self.customer.id,
+                "type": "something-something",
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.json()["detail"]["type"][0]["code"], "invalid_choice")
+
     def test_create_quote_with_invalid_customer_id(self):
         response = self.client.post(
             "/api/v1/quotes/",
