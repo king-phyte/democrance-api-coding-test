@@ -69,7 +69,7 @@ class QuoteTestCase(TestCase):
 
     def test_create_quote(self):
         response = self.client.post(
-            "/api/v1/quotes/",
+            "/api/v1/quote/",
             {
                 "customer_id": self.customer.id,
                 "type": "personal-accident",
@@ -97,7 +97,7 @@ class QuoteTestCase(TestCase):
         )
 
         response = self.client.post(
-            "/api/v1/quotes/",
+            "/api/v1/quote/",
             {
                 "customer_id": customer_under_25.id,
                 "type": "auto",
@@ -116,7 +116,7 @@ class QuoteTestCase(TestCase):
         )
 
         response = self.client.post(
-            "/api/v1/quotes/",
+            "/api/v1/quote/",
             {
                 "customer_id": customer_over_50.id,
                 "type": "homeowner-insurance",
@@ -130,7 +130,7 @@ class QuoteTestCase(TestCase):
 
     def test_create_quote_with_invalid_type(self):
         response = self.client.post(
-            "/api/v1/quotes/",
+            "/api/v1/quote/",
             {
                 "customer_id": self.customer.id,
                 "type": "something-something",
@@ -143,7 +143,7 @@ class QuoteTestCase(TestCase):
 
     def test_create_quote_with_invalid_customer_id(self):
         response = self.client.post(
-            "/api/v1/quotes/",
+            "/api/v1/quote/",
             {
                 "customer_id": 9999,
                 "type": "personal-accident",
@@ -156,7 +156,7 @@ class QuoteTestCase(TestCase):
 
     def test_accept_quote(self):
         response = self.client.put(
-            f"/api/v1/quotes/",
+            f"/api/v1/quote/",
             {"quote_id": self.quote.id, "status": "accepted"},
             content_type="application/json",
         )
@@ -166,7 +166,7 @@ class QuoteTestCase(TestCase):
 
     def test_pay_for_quote(self):
         response = self.client.put(
-            f"/api/v1/quotes/",
+            f"/api/v1/quote/",
             {"quote_id": self.quote.id, "status": "active"},
             content_type="application/json",
         )
@@ -176,7 +176,7 @@ class QuoteTestCase(TestCase):
 
     def test_update_nonexistent_quote(self):
         response = self.client.put(
-            f"/api/v1/quotes/",
+            f"/api/v1/quote/",
             {"quote_id": 99999, "status": "accepted"},
             content_type="application/json",
         )
@@ -186,7 +186,7 @@ class QuoteTestCase(TestCase):
 
     def test_update_quote_with_invalid_status(self):
         response = self.client.put(
-            f"/api/v1/quotes/",
+            f"/api/v1/quote/",
             {"quote_id": self.quote.id, "status": "something"},
             content_type="application/json",
         )
