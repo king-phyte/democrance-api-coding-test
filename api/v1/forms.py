@@ -91,3 +91,22 @@ class QuoteCreationForm(forms.ModelForm):
         )
 
         return self.instance
+
+
+class QuoteUpdateForm(forms.ModelForm):
+    quote_id = forms.IntegerField()
+
+    class Meta:
+        model = Quote
+        fields = ["status"]
+
+    def save(self, *args, **kwargs) -> Quote:
+        try:
+            quote = Quote.objects.get(id=self.cleaned_data["quote_id"])
+        except Quote.DoesNotExist as err:
+            raise err
+
+        quote.status = self.cleaned_data["status"]
+        quote.save()
+
+        return quote

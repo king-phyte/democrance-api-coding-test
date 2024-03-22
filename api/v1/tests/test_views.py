@@ -105,8 +105,8 @@ class QuoteTestCase(TestCase):
 
     def test_accept_quote(self):
         response = self.client.put(
-            f"/api/v1/quotes/{self.quote.id}/status/",
-            {"status": "accepted"},
+            f"/api/v1/quotes/",
+            {"quote_id": self.quote.id, "status": "accepted"},
             content_type="application/json",
         )
 
@@ -115,8 +115,8 @@ class QuoteTestCase(TestCase):
 
     def test_pay_for_quote(self):
         response = self.client.put(
-            f"/api/v1/quotes/{self.quote.id}/status/",
-            {"status": "active"},
+            f"/api/v1/quotes/",
+            {"quote_id": self.quote.id, "status": "active"},
             content_type="application/json",
         )
 
@@ -125,8 +125,8 @@ class QuoteTestCase(TestCase):
 
     def test_update_nonexistent_quote(self):
         response = self.client.put(
-            f"/api/v1/quotes/99999/status/",
-            {"status": "accepted"},
+            f"/api/v1/quotes/",
+            {"quote_id": 99999, "status": "accepted"},
             content_type="application/json",
         )
 
@@ -135,10 +135,13 @@ class QuoteTestCase(TestCase):
 
     def test_update_quote_with_invalid_status(self):
         response = self.client.put(
-            f"/api/v1/quotes/{self.quote.id}/status/",
-            {"status": "something"},
+            f"/api/v1/quotes/",
+            {"quote_id": self.quote.id, "status": "something"},
             content_type="application/json",
         )
 
         self.assertEqual(response.status_code, 422)
-        self.assertIn("invalid quote status", response.json()["detail"])
+        self.assertEqual(
+            response.json()["detail"]["status"][0]["code"],
+            "invalid_choice",
+        )

@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.views.generic.edit import ModelFormMixin, ProcessFormView
 
 from api.models import Customer, Quote
-from api.v1.forms import CustomerCreationForm, QuoteCreationForm
+from api.v1.forms import CustomerCreationForm, QuoteCreationForm, QuoteUpdateForm
 
 
 class CustomerView(ModelFormMixin, ProcessFormView):
@@ -37,8 +37,7 @@ class CustomerView(ModelFormMixin, ProcessFormView):
         return JsonResponse(customer.serialize(), status=201)
 
 
-class QuoteCreateView(ModelFormMixin, ProcessFormView):
-    form_class = QuoteCreationForm
+class QuoteView(ProcessFormView):
 
     def post(self, *args, **kwargs):
         """Create a new quote for a customer
@@ -55,7 +54,7 @@ class QuoteCreateView(ModelFormMixin, ProcessFormView):
         except json.decoder.JSONDecodeError:
             return JsonResponse({"detail": {"request body is malformed"}}, status=422)
 
-        form = self.form_class(request_json)
+        form = QuoteCreationForm(request_json)
 
         if not form.is_valid():
             return JsonResponse(
@@ -69,9 +68,6 @@ class QuoteCreateView(ModelFormMixin, ProcessFormView):
             return JsonResponse({"detail": "customer not found"}, status=404)
 
         return JsonResponse(quote.serialize(), status=201)
-
-
-class QuoteStatusUpdateView(ProcessFormView):
 
     def put(self, *args, **kwargs):
         """Updates a quotes' status (:class:`api.models.Quote.QuoteStatus`)
@@ -89,32 +85,20 @@ class QuoteStatusUpdateView(ProcessFormView):
         """
 
         try:
-            request_json = json.loads(self.request.body)
+            request_body_as_dict = json.loads(self.request.body)
         except json.decoder.JSONDecodeError:
             return JsonResponse({"detail": {"request body is malformed"}}, status=422)
 
-        status = request_json.get("status", None)
+        form = QuoteUpdateForm(request_body_as_dict)
 
-        if status not in Quote.QuoteStatus:
-            possible_statuses = []
-
-            for status, _ in Quote.QuoteStatus.choices:
-                possible_statuses.append(f"'{status}'")
-
+        if not form.is_valid():
             return JsonResponse(
-                {
-                    "detail": f"invalid quote status. possible options are: ({', '.join(possible_statuses)})"
-                },
-                status=422,
+                {"detail": json.loads(form.errors.as_json())}, status=422
             )
 
-        quote_id = self.kwargs.get("quote_id", 0)
         try:
-            quote = Quote.objects.get(id=quote_id)
+            quote = form.save()
         except Quote.DoesNotExist:
             return JsonResponse({"detail": "quote not found"}, status=404)
-
-        quote.status = status
-        quote.save()
 
         return JsonResponse(quote.serialize(), status=200)
