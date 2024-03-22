@@ -77,7 +77,7 @@ class QuoteCreationForm(forms.ModelForm):
         if customer_age < 25:
             cover *= 1.2
             premium *= 2
-        elif customer_age >= 25 < 50:
+        elif 25 <= customer_age < 50:
             cover *= 1.1
             premium *= 1.5
         else:
