@@ -12,6 +12,18 @@ class CustomerTestCase(TestCase):
 
     def setUp(self):
         self.client = Client()
+        self.customer = Customer.objects.create(
+            first_name="John",
+            last_name="Doe",
+            date_of_birth=datetime.date(year=2000, month=1, day=1),
+        )
+        self.quote = Quote.objects.create(
+            customer=self.customer,
+            cover=20000,
+            premium=200,
+            status=Quote.QuoteStatus.NEW,
+            type=Quote.QuoteType.AUTO_INSURANCE,
+        )
 
     def test_create_customer(self):
         user_ben = {"first_name": "Ben", "last_name": "Stokes", "dob": "25-06-1991"}
@@ -49,6 +61,48 @@ class CustomerTestCase(TestCase):
 
         self.assertEqual(response.status_code, 422)
         self.assertEqual(response.json()["detail"]["dob"][0]["code"], "invalid")
+
+    def test_search_customers(self):
+        response = self.client.get("/api/v1/customers/?first_name=John&last_name=Doe")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()["customers"]), 1)
+
+        customer = response.json()["customers"][0]
+
+        self.assertEqual(customer["id"], self.customer.id)
+
+        response = self.client.get("/api/v1/customers/?first_name=John")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()["customers"]), 1)
+
+        response = self.client.get("/api/v1/customers/?first_name=Ben")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()["customers"]), 0)
+
+        response = self.client.get("/api/v1/customers/?dob=01-01-2000")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()["customers"]), 1)
+
+        response = self.client.get("/api/v1/customers/?dob=25-06-1991")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()["customers"]), 0)
+
+        response = self.client.get("/api/v1/customers/?dob=incorrect")
+        self.assertEqual(response.status_code, 422)
+
+        response = self.client.get("/api/v1/customers/?policy_type=auto")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()["customers"]), 1)
+
+        response = self.client.get("/api/v1/customers/?policy_type=personal-accident")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()["customers"]), 0)
+
+        response = self.client.get("/api/v1/customers/?policy_type=something")
+        self.assertEqual(response.status_code, 422)
 
 
 class QuoteTestCase(TestCase):
