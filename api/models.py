@@ -133,6 +133,7 @@ class PolicyStateHistory(models.Model):
 
     class Meta:
         db_table = "policy_state_history"
+        verbose_name_plural = "policy state history"
 
     def serialize(self):
         """Serialize the policy history as a dict"""
@@ -177,6 +178,7 @@ class Policy(models.Model):
 
     class Meta:
         db_table = "policies"
+        verbose_name_plural = "policies"
 
     def save(self, *args, **kwargs):
         """Save the current instance
