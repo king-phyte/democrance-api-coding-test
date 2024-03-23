@@ -166,6 +166,12 @@ class QuoteTestCase(TestCase):
         self.assertEqual(response.json()["status"], "accepted")
 
     def test_pay_for_quote(self):
+        self.client.put(
+            f"/api/v1/quote/",
+            {"quote_id": self.quote.id, "status": "accepted"},
+            content_type="application/json",
+        )
+
         response = self.client.put(
             f"/api/v1/quote/",
             {"quote_id": self.quote.id, "status": "active"},
