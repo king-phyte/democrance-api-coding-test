@@ -115,7 +115,8 @@ class CustomerView(MultipleObjectMixin, View):
                 )
 
             customers = customers.filter(policy__type=policy_type)
-        customers = customers.order_by("id")
+
+        customers = customers.distinct().order_by("id")
 
         try:
             (paginator, page, object_list, _) = self.paginate_queryset(
