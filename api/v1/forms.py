@@ -11,7 +11,7 @@ import datetime
 
 from django import forms
 
-from api.models import Customer, Quote
+from api.models import Customer, Policy, Quote
 
 
 class CustomerCreationForm(forms.ModelForm):
@@ -101,12 +101,48 @@ class QuoteUpdateForm(forms.ModelForm):
         fields = ["status"]
 
     def save(self, *args, **kwargs) -> Quote:
+        """Updates the quote's status
+
+        The quote status is updated only if it follows the transition as shown below:
+            - `QuoteStatus.NEW -> QuoteStatus.ACCEPTED`
+            - `QuoteStatus.ACCEPTED -> QuoteStatus.ACTIVE`
+        Any other status change will not be saved
+
+        When a transition is made, the corresponding policy for this quote will change state as shown below:
+            - `QuoteStatus.NEW -> QuoteStatus.ACCEPTED = PolicyState.NEW`
+            - `QuoteStatus.ACCEPTED -> QuoteStatus.ACTIVE = PolicyState.BOUND`
+
+        :raises Quote.DoesNotExist: If the quote with specified ID is not found
+        """
+
         try:
             quote = Quote.objects.get(id=self.cleaned_data["quote_id"])
         except Quote.DoesNotExist as err:
             raise err
 
+        current_status = quote.status
+        new_status = self.cleaned_data["status"]
+
+        if current_status == new_status:
+            return quote
+
+        policy = Policy.objects.get(quote__id=quote.id)
+
+        if (
+            current_status == Quote.QuoteStatus.NEW
+            and new_status == Quote.QuoteStatus.ACCEPTED
+        ):
+            policy.state = Policy.PolicyState.NEW
+        elif (
+            current_status == Quote.QuoteStatus.ACCEPTED
+            and new_status == Quote.QuoteStatus.ACTIVE
+        ):
+            policy.state = Policy.PolicyState.BOUND
+        else:
+            return quote
+
         quote.status = self.cleaned_data["status"]
         quote.save()
+        policy.save()
 
         return quote

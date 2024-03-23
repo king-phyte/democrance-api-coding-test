@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from api.models import Customer, Quote
+from api.models import Customer, Policy, PolicyStateHistory, Quote
 
 
 class CustomerAdmin(admin.ModelAdmin):
@@ -19,5 +19,26 @@ class QuoteAdmin(admin.ModelAdmin):
     ordering = ["-created"]
 
 
+class PolicyAdmin(admin.ModelAdmin):
+
+    list_display = ["id", "customer", "type", "state", "cover", "premium", "created"]
+
+    search_fields = ["type", "customer", "state"]
+
+    ordering = ["-created"]
+
+
+class PolicyStateHistoryAdmin(admin.ModelAdmin):
+    list_display = ["id", "policy_id", "state", "as_json", "created"]
+
+    ordering = ["policy_id", "-created"]
+
+    @admin.display
+    def policy_id(self, obj):
+        return obj.policy.id
+
+
 admin.site.register(Customer, CustomerAdmin)
 admin.site.register(Quote, QuoteAdmin)
+admin.site.register(Policy, PolicyAdmin)
+admin.site.register(PolicyStateHistory, PolicyStateHistoryAdmin)
