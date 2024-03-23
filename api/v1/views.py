@@ -1,14 +1,17 @@
+import datetime
 import json
 
 from django.http import Http404, JsonResponse
+from django.views import View
 from django.views.generic.detail import BaseDetailView, SingleObjectMixin
 from django.views.generic.edit import ModelFormMixin, ProcessFormView
+from django.views.generic.list import MultipleObjectMixin
 
 from api.models import Customer, Policy, PolicyStateHistory, Quote
 from api.v1.forms import CustomerCreationForm, QuoteCreationForm, QuoteUpdateForm
 
 
-class CustomerView(ModelFormMixin, ProcessFormView):
+class CustomerCreateView(ModelFormMixin, ProcessFormView):
     form_class = CustomerCreationForm
 
     def post(self, *args, **kwargs):
@@ -36,6 +39,104 @@ class CustomerView(ModelFormMixin, ProcessFormView):
         customer = form.save()
 
         return JsonResponse(customer.serialize(), status=201)
+
+
+class CustomerView(MultipleObjectMixin, View):
+    model = Customer
+    paginate_by = 10
+
+    def get(self, *args, **kwargs):
+        """Fetch all customers, with some optional filters
+
+        The result set is offset paginated.
+
+        Query parameters
+        ----------------
+            - page (Optional): Page number to fetch
+            - per_page (Optional): Number of items per page. Defaults to 10. Maximum is 100
+            - first_name (Optional): First name of the customer
+            - last_name (Optional): Last name of the customer
+            - dob (Optional): Date of birth of the customer
+            - policy_type (Optional): Policy type. Must be one of :class:`api.models.Quote.QuoteType`
+
+            Note that, if more than one filter is provided, they are ANDed together, not ORed.
+
+
+        HTTP Response Codes
+        -------------------
+            - 200 OK: Successfully fetched customers
+            - 422 Validation Error: One of the query parameters is invalid
+        """
+
+        query_params = self.request.GET
+
+        per_page = query_params.get("per_page", self.paginate_by)
+
+        try:
+            per_page = int(per_page)
+        except ValueError:
+            return JsonResponse(
+                {"detail": "per_page must be positive integer"},
+                status=422,
+            )
+
+        # Force per_page ot a maximum of 100
+        per_page = min(per_page, 100)
+
+        first_name = query_params.get("first_name")
+        last_name = query_params.get("last_name")
+
+        customers = super().get_queryset()
+
+        if first_name:
+            customers = customers.filter(first_name__icontains=first_name)
+
+        if last_name:
+            customers = customers.filter(last_name__icontains=last_name)
+
+        dob = query_params.get("dob")
+
+        if dob is not None:
+            try:
+                dob = datetime.datetime.strptime(dob, "%d-%m-%Y")
+            except ValueError:
+                return JsonResponse(
+                    {"detail": "invalid date format specified for field dob"},
+                    status=422,
+                )
+            customers = customers.filter(date_of_birth=dob)
+
+        policy_type = query_params.get("policy_type")
+
+        if policy_type is not None:
+            if policy_type not in Quote.QuoteType:
+                return JsonResponse(
+                    {"detail": "invalid policy type specified"}, status=422
+                )
+
+            customers = customers.filter(policy__type=policy_type)
+        customers = customers.order_by("id")
+
+        try:
+            (paginator, page, object_list, _) = self.paginate_queryset(
+                customers, per_page
+            )
+        except Http404:
+            return JsonResponse(
+                {"detail": "page must be a positive integer"}, status=422
+            )
+
+        return JsonResponse(
+            {
+                "customers": [customer.serialize() for customer in object_list],
+                "total_pages": paginator.count,
+                "previous_page": (
+                    page.previous_page_number() if page.has_previous() else None
+                ),
+                "next_page": page.next_page_number() if page.has_next() else None,
+            },
+            status=200,
+        )
 
 
 class QuoteView(ProcessFormView):
